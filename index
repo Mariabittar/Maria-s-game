@@ -1,194 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe Game</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        h1 {
-            margin-bottom: 10px;
-            color: #00adb5;
-        }
-
-        .status {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            grid-template-rows: repeat(3, 100px);
-            gap: 5px;
-            background-color: #393e46;
-            padding: 5px;
-            border-radius: 10px;
-        }
-
-        .cell {
-            background-color: #222831;
-            border: none;
-            border-radius: 5px;
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #eee;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .cell:hover {
-            background-color: #2d343f;
-        }
-
-        .cell.x {
-            color: #ff2e63;
-        }
-
-        .cell.o {
-            color: #00adb5;
-        }
-
-        .reset-btn {
-            margin-top: 20px;
-            padding: 10px 20px;
-            font-size: 1rem;
-            font-weight: bold;
-            background-color: #00adb5;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .reset-btn:hover {
-            background-color: #008087;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Pong</title>
+  <style>
+    body {
+      background-color: #222;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+      margin-top: 50px;
+    }
+    h1 {
+      margin-bottom: 5px;
+    }
+    p {
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+    canvas {
+      background-color: #000;
+      border: 2px solid #fff;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+      cursor: none; /* Hides the mouse cursor over the game */
+    }
+  </style>
 </head>
 <body>
 
-    <h1>Tic-Tac-Toe</h1>
-    <div class="status" id="status">Player X's turn</div>
-    
-    <div class="board" id="board">
-        <button class="cell" data-cell-index="0"></button>
-        <button class="cell" data-cell-index="1"></button>
-        <button class="cell" data-cell-index="2"></button>
-        <button class="cell" data-cell-index="3"></button>
-        <button class="cell" data-cell-index="4"></button>
-        <button class="cell" data-cell-index="5"></button>
-        <button class="cell" data-cell-index="6"></button>
-        <button class="cell" data-cell-index="7"></button>
-        <button class="cell" data-cell-index="8"></button>
-    </div>
+  <h1>Browser Pong</h1>
+  <p>Move your mouse up and down over the game board to control the left paddle.</p>
+  
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
 
-    <button class="reset-btn" id="resetBtn">Restart Game</button>
+  <script>
+    // Get the canvas and its context so we can draw on it
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
 
-    <script>
-        const board = document.getElementById('board');
-        const cells = document.querySelectorAll('.cell');
-        const statusText = document.getElementById('status');
-        const resetBtn = document.getElementById('resetBtn');
-        
-        let currentPlayer = "X";
-        let gameState = ["", "", "", "", "", "", "", "", ""];
-        let isGameActive = true;
+    // Define the game objects
+    const ball = { x: 300, y: 200, radius: 10, dx: 5, dy: 5 };
+    const paddle = { width: 10, height: 80, x: 10, y: 160 };
+    const aiPaddle = { width: 10, height: 80, x: 580, y: 160 };
 
-        const winningConditions = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
-        ];
+    // Listen for mouse movements to control the player's paddle
+    canvas.addEventListener("mousemove", (e) => {
+      let rect = canvas.getBoundingClientRect();
+      paddle.y = e.clientY - rect.top - paddle.height / 2;
+    });
 
-        function handleCellClick(e) {
-            const clickedCell = e.target;
-            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+    // Helper function to draw rectangles (paddles)
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
 
-            if (gameState[clickedCellIndex] !== "" || !isGameActive) {
-                return;
-            }
+    // Helper function to draw circles (the ball)
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2, false);
+      ctx.closePath();
+      ctx.fill();
+    }
 
-            updateCell(clickedCell, clickedCellIndex);
-            checkForWinner();
-        }
+    // Update the positions of everything
+    function update() {
+      // Move the ball
+      ball.x += ball.dx;
+      ball.y += ball.dy;
 
-        function updateCell(cell, index) {
-            gameState[index] = currentPlayer;
-            cell.innerText = currentPlayer;
-            cell.classList.add(currentPlayer.toLowerCase());
-        }
+      // Bounce off top and bottom walls
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.dy *= -1;
+      }
 
-        function changePlayer() {
-            currentPlayer = currentPlayer === "X" ? "O" : "X";
-            statusText.innerText = `Player ${currentPlayer}'s turn`;
-        }
+      // Simple AI for the right paddle (follows the ball's Y position)
+      aiPaddle.y += (ball.y - (aiPaddle.y + aiPaddle.height / 2)) * 0.08;
 
-        function checkForWinner() {
-            let roundWon = false;
+      // Check collision with the player's paddle (Left)
+      if (ball.x - ball.radius < paddle.x + paddle.width &&
+          ball.y > paddle.y && ball.y < paddle.y + paddle.height) {
+        ball.dx *= -1;
+        // Increase speed slightly for fun
+        ball.dx += (ball.dx > 0 ? 0.2 : -0.2); 
+      }
 
-            for (let i = 0; i < winningConditions.length; i++) {
-                const winCondition = winningConditions[i];
-                let a = gameState[winCondition[0]];
-                let b = gameState[winCondition[1]];
-                let c = gameState[winCondition[2]];
+      // Check collision with the AI's paddle (Right)
+      if (ball.x + ball.radius > aiPaddle.x &&
+          ball.y > aiPaddle.y && ball.y < aiPaddle.y + aiPaddle.height) {
+        ball.dx *= -1;
+      }
 
-                if (a === '' || b === '' || c === '') {
-                    continue;
-                }
-                if (a === b && b === c) {
-                    roundWon = true;
-                    break;
-                }
-            }
+      // If the ball goes past the left or right edge, reset it to the middle
+      if (ball.x < 0 || ball.x > canvas.width) {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.dx = (ball.dx > 0 ? -5 : 5); // Serve to the other side at default speed
+        ball.dy = 5;
+      }
+    }
 
-            if (roundWon) {
-                statusText.innerText = `Player ${currentPlayer} Wins!`;
-                isGameActive = false;
-                return;
-            }
+    // Draw everything on the screen
+    function draw() {
+      // Clear the canvas with a black background
+      drawRect(0, 0, canvas.width, canvas.height, "#000");
 
-            let roundDraw = !gameState.includes("");
-            if (roundDraw) {
-                statusText.innerText = "Game is a Draw!";
-                isGameActive = false;
-                return;
-            }
+      // Draw the paddles and ball
+      drawRect(paddle.x, paddle.y, paddle.width, paddle.height, "#fff");
+      drawRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height, "#fff");
+      drawCircle(ball.x, ball.y, ball.radius, "#fff");
+      
+      // Draw a dashed center line
+      for(let i = 0; i < canvas.height; i += 20) {
+          drawRect(canvas.width / 2 - 1, i, 2, 10, "#555");
+      }
+    }
 
-            changePlayer();
-        }
+    // The main game loop
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop); // Keep looping!
+    }
 
-        function resetGame() {
-            currentPlayer = "X";
-            gameState = ["", "", "", "", "", "", "", "", ""];
-            isGameActive = true;
-            statusText.innerText = "Player X's turn";
-            cells.forEach(cell => {
-                cell.innerText = "";
-                cell.classList.remove('x', 'o');
-            });
-        }
-
-        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-        resetBtn.addEventListener('click', resetGame);
-    </script>
+    // Start the game!
+    gameLoop();
+  </script>
 </body>
 </html>
