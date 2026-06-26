@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Pong</title>
+  <style>
+    body {
+      background-color: #222;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: sans-serif;
+      margin-top: 50px;
+    }
+    h1 {
+      margin-bottom: 5px;
+    }
+    p {
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+    canvas {
+      background-color: #000;
+      border: 2px solid #fff;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+      cursor: none; /* Hides the mouse cursor over the game */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Browser Pong</h1>
+  <p>Move your mouse up and down over the game board to control the left paddle.</p>
+  
+  <canvas id="gameCanvas" width="600" height="400"></canvas>
+
+  <script>
+    // Get the canvas and its context so we can draw on it
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // Define the game objects
+    const ball = { x: 300, y: 200, radius: 10, dx: 5, dy: 5 };
+    const paddle = { width: 10, height: 80, x: 10, y: 160 };
+    const aiPaddle = { width: 10, height: 80, x: 580, y: 160 };
+
+    // Listen for mouse movements to control the player's paddle
+    canvas.addEventListener("mousemove", (e) => {
+      let rect = canvas.getBoundingClientRect();
+      paddle.y = e.clientY - rect.top - paddle.height / 2;
+    });
+
+    // Helper function to draw rectangles (paddles)
+    function drawRect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    }
+
+    // Helper function to draw circles (the ball)
+    function drawCircle(x, y, r, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2, false);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Update the positions of everything
+    function update() {
+      // Move the ball
+      ball.x += ball.dx;
+      ball.y += ball.dy;
+
+      // Bounce off top and bottom walls
+      if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.dy *= -1;
+      }
+
+      // Simple AI for the right paddle (follows the ball's Y position)
+      aiPaddle.y += (ball.y - (aiPaddle.y + aiPaddle.height / 2)) * 0.08;
+
+      // Check collision with the player's paddle (Left)
+      if (ball.x - ball.radius < paddle.x + paddle.width &&
+          ball.y > paddle.y && ball.y < paddle.y + paddle.height) {
+        ball.dx *= -1;
+        // Increase speed slightly for fun
+        ball.dx += (ball.dx > 0 ? 0.2 : -0.2); 
+      }
+
+      // Check collision with the AI's paddle (Right)
+      if (ball.x + ball.radius > aiPaddle.x &&
+          ball.y > aiPaddle.y && ball.y < aiPaddle.y + aiPaddle.height) {
+        ball.dx *= -1;
+      }
+
+      // If the ball goes past the left or right edge, reset it to the middle
+      if (ball.x < 0 || ball.x > canvas.width) {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.dx = (ball.dx > 0 ? -5 : 5); // Serve to the other side at default speed
+        ball.dy = 5;
+      }
+    }
+
+    // Draw everything on the screen
+    function draw() {
+      // Clear the canvas with a black background
+      drawRect(0, 0, canvas.width, canvas.height, "#000");
+
+      // Draw the paddles and ball
+      drawRect(paddle.x, paddle.y, paddle.width, paddle.height, "#fff");
+      drawRect(aiPaddle.x, aiPaddle.y, aiPaddle.width, aiPaddle.height, "#fff");
+      drawCircle(ball.x, ball.y, ball.radius, "#fff");
+      
+      // Draw a dashed center line
+      for(let i = 0; i < canvas.height; i += 20) {
+          drawRect(canvas.width / 2 - 1, i, 2, 10, "#555");
+      }
+    }
+
+    // The main game loop
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop); // Keep looping!
+    }
+
+    // Start the game!
+    gameLoop();
+  </script>
+</body>
+</html>
